@@ -65,8 +65,8 @@ $admin_name = $_SESSION['admin_username'];
                     </div>
                 </div>
                 <div class="navbar-nav w-100">
-                    <a href="index.html" class="nav-item nav-link active"><i class="fa fa-tachometer-alt me-2"></i>Dashboard</a>
-              
+                    <a href="index.php" class="nav-item nav-link active"><i class="fa fa-tachometer-alt me-2"></i>Dashboard</a>
+                    <a href="categories.php" class="nav-item nav-link"><i class="fa fa-tags me-2"></i>Catégories</a>
                 </div>
             </nav>
         </div>
@@ -195,8 +195,11 @@ $admin_name = $_SESSION['admin_username'];
                         <textarea class="form-control" id="description" name="description" required></textarea>
                       </div>
                       <div class="mb-3">
-                        <label for="category" class="form-label">Category</label>
-                        <input type="text" class="form-control" id="category" name="category" required>
+                        <label for="category" class="form-label">Catégorie</label>
+                        <select class="form-control" id="category" name="category_id">
+                          <option value="">Sélectionner une catégorie</option>
+                          <!-- Categories will be loaded here -->
+                        </select>
                       </div>
                       <div class="mb-3">
                         <label for="country" class="form-label">Country</label>
@@ -294,7 +297,7 @@ $admin_name = $_SESSION['admin_username'];
                         <td>${product.price}</td>
                         <td>${mediaHtml}</td>
                         <td>${product.description}</td>
-                        <td>${product.category}</td>
+                        <td>${product.category_name || '-'}</td>
                         <td>${product.weight || ''}</td>
                         <td>${product.country}</td>
                         <td>
@@ -349,7 +352,7 @@ $admin_name = $_SESSION['admin_username'];
                     $('#productName').val(product.product_name);
                     $('#price').val(product.price);
                     $('#description').val(product.description);
-                    $('#category').val(product.category);
+                    $('#category').val(product.category_id || '');
                     $('#weight').val(product.weight || '');
                     $('#country').val(product.country);
                     if (product.media) {
@@ -542,8 +545,25 @@ $admin_name = $_SESSION['admin_username'];
             stopCapture();
         });
 
+        // Load categories for product form
+        function loadCategories() {
+            $.get('categories_api.php', function(data) {
+                const select = $('#category');
+                select.find('option:not(:first)').remove();
+                
+                if (data.categories) {
+                    data.categories.forEach(category => {
+                        if (category.is_active == 1) {
+                            select.append(`<option value="${category.id}">${category.name}</option>`);
+                        }
+                    });
+                }
+            }, 'json');
+        }
+
         // Initial fetch
         fetchProducts();
+        loadCategories();
     });
     </script>
 </body>
