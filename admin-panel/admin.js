@@ -1,213 +1,382 @@
-// Admin Panel JavaScript
+// Panel Admin JavaScript pour Ma Boutique
 $(document).ready(function() {
+    let currentPage = 1;
+    let productsPerPage = 10;
+    let allProducts = [];
+    let filteredProducts = [];
+
     // Initialisation
-    initAdminPanel();
-    
-    // Gestion du toggle sidebar
-    $('.sidebar-toggler').on('click', function() {
-        $('.sidebar').toggleClass('open');
-        $('.content').toggleClass('open');
-    });
-    
-    // Gestion des produits
-    initProductManagement();
-    
-    // Gestion des catégories
-    initCategoryManagement();
-    
-    // Vérification de session périodique
-    setInterval(checkSession, 300000); // Toutes les 5 minutes
-});
+    init();
 
-function initAdminPanel() {
-    // Masquer le spinner
-    $('#spinner').hide();
-    
-    // Initialiser les tooltips
-    $('[data-bs-toggle="tooltip"]').tooltip();
-    
-    // Initialiser les popovers
-    $('[data-bs-toggle="popover"]').popover();
-    
-    // Gestion de la déconnexion
-    $('.logout-btn').on('click', function(e) {
-        e.preventDefault();
-        logout();
-    });
-}
+    function init() {
+        loadDashboardStats();
+        loadProducts();
+        loadCategories();
+        setupEventListeners();
+        setupSearchFunctionality();
+    }
 
-function initProductManagement() {
-    // Charger les produits au démarrage
-    loadProducts();
-    
-    // Gestion du bouton d'ajout de produit
-    $('#addProductBtn').on('click', function() {
-        $('#productModalLabel').text('Ajouter un produit');
-        $('#productForm')[0].reset();
-        $('#productId').val('');
-        $('#productModal').modal('show');
-    });
-    
-    // Gestion du formulaire de produit
-    $('#productForm').on('submit', function(e) {
-        e.preventDefault();
-        saveProduct();
-    });
-    
-    // Gestion de la recherche
-    $('#searchInput').on('input', function() {
-        const searchTerm = $(this).val().toLowerCase();
-        filterProducts(searchTerm);
-    });
-    
-    // Gestion de la capture vidéo/photo
-    initMediaCapture();
-}
+    // Chargement des statistiques du dashboard
+    function loadDashboardStats() {
+        // Simulation des statistiques (à remplacer par des appels API réels)
+        $('#totalProducts').text('0');
+        $('#totalOrders').text('0');
+        $('#totalCustomers').text('0');
+        $('#totalRevenue').text('0€');
 
-function initCategoryManagement() {
-    // Charger les catégories
-    loadCategories();
-    
-    // Gestion du bouton d'ajout de catégorie
-    $('#addCategoryBtn').on('click', function() {
-        $('#categoryModalLabel').text('Ajouter une catégorie');
-        $('#categoryForm')[0].reset();
-        $('#categoryId').val('');
-        $('#categoryModal').modal('show');
-    });
-    
-    // Gestion du formulaire de catégorie
-    $('#categoryForm').on('submit', function(e) {
-        e.preventDefault();
-        saveCategory();
-    });
-}
-
-function loadProducts(page = 1) {
-    $.ajax({
-        url: 'products_api.php',
-        type: 'GET',
-        data: { action: 'get_products', page: page },
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                displayProducts(response.data);
-                updatePagination(response.pagination);
-            } else {
-                showAlert('Erreur lors du chargement des produits', 'danger');
-            }
-        },
-        error: function() {
-            showAlert('Erreur de connexion au serveur', 'danger');
-        }
-    });
-}
-
-function displayProducts(products) {
-    const tbody = $('#productsTable tbody');
-    tbody.empty();
-    
-    products.forEach(product => {
-        const row = `
-            <tr>
-                <td>${escapeHtml(product.product_name)}</td>
-                <td>${formatPrice(product.price)}</td>
-                <td>
-                    ${product.media ? `<img src="${product.media}" alt="${product.product_name}" style="max-width: 50px; max-height: 50px;" class="img-thumbnail">` : 'Aucun média'}
-                </td>
-                <td>${escapeHtml(product.description)}</td>
-                <td>${escapeHtml(product.category_name || 'Non catégorisé')}</td>
-                <td>${product.weight || 'N/A'}</td>
-                <td>${escapeHtml(product.country || 'N/A')}</td>
-                <td>
-                    <button class="btn btn-sm btn-primary edit-product" data-id="${product.id}">
-                        <i class="fa fa-edit"></i>
-                    </button>
-                    <button class="btn btn-sm btn-danger delete-product" data-id="${product.id}">
-                        <i class="fa fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `;
-        tbody.append(row);
-    });
-    
-    // Gestion des boutons d'édition
-    $('.edit-product').on('click', function() {
-        const productId = $(this).data('id');
-        editProduct(productId);
-    });
-    
-    // Gestion des boutons de suppression
-    $('.delete-product').on('click', function() {
-        const productId = $(this).data('id');
-        deleteProduct(productId);
-    });
-}
-
-function saveProduct() {
-    const formData = new FormData($('#productForm')[0]);
-    formData.append('action', 'save_product');
-    
-    $.ajax({
-        url: 'products_api.php',
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                showAlert('Produit sauvegardé avec succès', 'success');
-                $('#productModal').modal('hide');
-                loadProducts();
-            } else {
-                showAlert(response.message || 'Erreur lors de la sauvegarde', 'danger');
-            }
-        },
-        error: function() {
-            showAlert('Erreur de connexion au serveur', 'danger');
-        }
-    });
-}
-
-function editProduct(productId) {
-    $.ajax({
-        url: 'products_api.php',
-        type: 'GET',
-        data: { action: 'get_product', id: productId },
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                const product = response.data;
-                $('#productModalLabel').text('Modifier le produit');
-                $('#productId').val(product.id);
-                $('#productName').val(product.product_name);
-                $('#price').val(product.price);
-                $('#description').val(product.description);
-                $('#category').val(product.category_id);
-                $('#productModal').modal('show');
-            } else {
-                showAlert('Erreur lors du chargement du produit', 'danger');
-            }
-        },
-        error: function() {
-            showAlert('Erreur de connexion au serveur', 'danger');
-        }
-    });
-}
-
-function deleteProduct(productId) {
-    if (confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')) {
+        // Appel API pour les vraies statistiques
         $.ajax({
             url: 'products_api.php',
-            type: 'POST',
-            data: { action: 'delete_product', id: productId },
-            dataType: 'json',
+            method: 'GET',
+            data: { action: 'get_stats' },
+            success: function(response) {
+                if (response.success) {
+                    $('#totalProducts').text(response.stats.total_products || 0);
+                    $('#totalOrders').text(response.stats.total_orders || 0);
+                    $('#totalCustomers').text(response.stats.total_customers || 0);
+                    $('#totalRevenue').text((response.stats.total_revenue || 0) + '€');
+                }
+            },
+            error: function() {
+                console.log('Erreur lors du chargement des statistiques');
+            }
+        });
+    }
+
+    // Chargement des produits
+    function loadProducts() {
+        $.ajax({
+            url: 'products_api.php',
+            method: 'GET',
+            data: { action: 'get_all' },
+            success: function(response) {
+                if (response.success) {
+                    allProducts = response.products || [];
+                    filteredProducts = [...allProducts];
+                    displayProducts();
+                    updatePagination();
+                } else {
+                    showAlert('Erreur lors du chargement des produits', 'danger');
+                }
+            },
+            error: function() {
+                showAlert('Erreur de connexion au serveur', 'danger');
+            }
+        });
+    }
+
+    // Affichage des produits
+    function displayProducts() {
+        const startIndex = (currentPage - 1) * productsPerPage;
+        const endIndex = startIndex + productsPerPage;
+        const productsToShow = filteredProducts.slice(startIndex, endIndex);
+
+        const tbody = $('#productsTable tbody');
+        tbody.empty();
+
+        if (productsToShow.length === 0) {
+            tbody.append(`
+                <tr>
+                    <td colspan="7" class="text-center text-muted">
+                        <i class="fa fa-box-open fa-2x mb-2"></i>
+                        <br>Aucun produit trouvé
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+
+        productsToShow.forEach(product => {
+            const mediaPreview = product.media ? 
+                `<img src="${product.media}" alt="${product.product_name}" style="width: 50px; height: 50px; object-fit: cover;" class="rounded">` :
+                '<i class="fa fa-image text-muted"></i>';
+
+            const row = `
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            ${mediaPreview}
+                            <div class="ms-3">
+                                <h6 class="mb-0">${product.product_name}</h6>
+                                <small class="text-muted">ID: ${product.id}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge bg-success">${product.price}€</span></td>
+                    <td>
+                        ${product.media ? 
+                            `<a href="${product.media}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fa fa-eye"></i>
+                            </a>` : 
+                            '<span class="text-muted">Aucun média</span>'
+                        }
+                    </td>
+                    <td>
+                        <span class="text-truncate d-inline-block" style="max-width: 200px;" title="${product.description}">
+                            ${product.description}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge bg-info">${product.category_name || 'Non catégorisé'}</span>
+                    </td>
+                    <td>${product.country || 'N/A'}</td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-outline-primary edit-product" data-id="${product.id}">
+                                <i class="fa fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger delete-product" data-id="${product.id}">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            tbody.append(row);
+        });
+    }
+
+    // Mise à jour de la pagination
+    function updatePagination() {
+        const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+        const pagination = $('#pagination');
+        pagination.empty();
+
+        if (totalPages <= 1) return;
+
+        let paginationHtml = '<ul class="pagination pagination-sm mb-0">';
+        
+        // Bouton précédent
+        paginationHtml += `
+            <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${currentPage - 1}">
+                    <i class="fa fa-chevron-left"></i>
+                </a>
+            </li>
+        `;
+
+        // Pages
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                paginationHtml += `
+                    <li class="page-item ${i === currentPage ? 'active' : ''}">
+                        <a class="page-link" href="#" data-page="${i}">${i}</a>
+                    </li>
+                `;
+            } else if (i === currentPage - 3 || i === currentPage + 3) {
+                paginationHtml += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+            }
+        }
+
+        // Bouton suivant
+        paginationHtml += `
+            <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="#" data-page="${currentPage + 1}">
+                    <i class="fa fa-chevron-right"></i>
+                </a>
+            </li>
+        `;
+
+        paginationHtml += '</ul>';
+        pagination.html(paginationHtml);
+    }
+
+    // Chargement des catégories
+    function loadCategories() {
+        $.ajax({
+            url: 'categories_api.php',
+            method: 'GET',
+            data: { action: 'get_all' },
+            success: function(response) {
+                if (response.success) {
+                    const categorySelect = $('#category');
+                    categorySelect.find('option:not(:first)').remove();
+                    
+                    response.categories.forEach(category => {
+                        categorySelect.append(`
+                            <option value="${category.id}">${category.name}</option>
+                        `);
+                    });
+                }
+            },
+            error: function() {
+                console.log('Erreur lors du chargement des catégories');
+            }
+        });
+    }
+
+    // Configuration des événements
+    function setupEventListeners() {
+        // Boutons d'ajout de produit
+        $('#addProductBtn, #addProductBtn2').click(function() {
+            resetProductForm();
+            $('#productModalLabel').text('Ajouter un Produit');
+            $('#productModal').modal('show');
+        });
+
+        // Soumission du formulaire produit
+        $('#productForm').submit(function(e) {
+            e.preventDefault();
+            saveProduct();
+        });
+
+        // Édition de produit
+        $(document).on('click', '.edit-product', function() {
+            const productId = $(this).data('id');
+            editProduct(productId);
+        });
+
+        // Suppression de produit
+        $(document).on('click', '.delete-product', function() {
+            const productId = $(this).data('id');
+            $('#deleteProductId').val(productId);
+            $('#deleteModal').modal('show');
+        });
+
+        // Confirmation de suppression
+        $('#confirmDeleteBtn').click(function() {
+            const productId = $('#deleteProductId').val();
+            deleteProduct(productId);
+        });
+
+        // Pagination
+        $(document).on('click', '.pagination .page-link', function(e) {
+            e.preventDefault();
+            const page = $(this).data('page');
+            if (page && page > 0) {
+                currentPage = page;
+                displayProducts();
+                updatePagination();
+            }
+        });
+
+        // Navigation sidebar
+        $('#ordersLink').click(function(e) {
+            e.preventDefault();
+            showAlert('Fonctionnalité Commandes à venir', 'info');
+        });
+
+        $('#customersLink').click(function(e) {
+            e.preventDefault();
+            showAlert('Fonctionnalité Clients à venir', 'info');
+        });
+
+        $('#analyticsLink').click(function(e) {
+            e.preventDefault();
+            showAlert('Fonctionnalité Analytics à venir', 'info');
+        });
+
+        $('#settingsLink').click(function(e) {
+            e.preventDefault();
+            showAlert('Fonctionnalité Paramètres à venir', 'info');
+        });
+
+        // Capture de média
+        setupMediaCapture();
+    }
+
+    // Configuration de la recherche
+    function setupSearchFunctionality() {
+        let searchTimeout;
+        $('#searchInput').on('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const searchTerm = $(this).val().toLowerCase();
+                filterProducts(searchTerm);
+            }, 300);
+        });
+    }
+
+    // Filtrage des produits
+    function filterProducts(searchTerm) {
+        if (!searchTerm) {
+            filteredProducts = [...allProducts];
+        } else {
+            filteredProducts = allProducts.filter(product => 
+                product.product_name.toLowerCase().includes(searchTerm) ||
+                product.description.toLowerCase().includes(searchTerm) ||
+                (product.category_name && product.category_name.toLowerCase().includes(searchTerm))
+            );
+        }
+        currentPage = 1;
+        displayProducts();
+        updatePagination();
+    }
+
+    // Sauvegarde d'un produit
+    function saveProduct() {
+        const formData = new FormData($('#productForm')[0]);
+        
+        $.ajax({
+            url: 'products_api.php',
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    showAlert('Produit sauvegardé avec succès', 'success');
+                    $('#productModal').modal('hide');
+                    loadProducts();
+                    loadDashboardStats();
+                } else {
+                    showAlert(response.message || 'Erreur lors de la sauvegarde', 'danger');
+                }
+            },
+            error: function() {
+                showAlert('Erreur de connexion au serveur', 'danger');
+            }
+        });
+    }
+
+    // Édition d'un produit
+    function editProduct(productId) {
+        $.ajax({
+            url: 'products_api.php',
+            method: 'GET',
+            data: { action: 'get', id: productId },
+            success: function(response) {
+                if (response.success) {
+                    const product = response.product;
+                    $('#productId').val(product.id);
+                    $('#productName').val(product.product_name);
+                    $('#price').val(product.price);
+                    $('#description').val(product.description);
+                    $('#category').val(product.category_id);
+                    $('#country').val(product.country);
+                    $('#weight').val(product.weight);
+                    $('#stock').val(product.stock || 0);
+                    
+                    if (product.media) {
+                        $('#mediaPreview').html(`
+                            <img src="${product.media}" alt="Preview" style="max-width: 100%; max-height: 200px;" class="rounded">
+                        `);
+                    }
+
+                    $('#productModalLabel').text('Modifier le Produit');
+                    $('#productModal').modal('show');
+                } else {
+                    showAlert('Erreur lors du chargement du produit', 'danger');
+                }
+            },
+            error: function() {
+                showAlert('Erreur de connexion au serveur', 'danger');
+            }
+        });
+    }
+
+    // Suppression d'un produit
+    function deleteProduct(productId) {
+        $.ajax({
+            url: 'products_api.php',
+            method: 'POST',
+            data: { action: 'delete', id: productId },
             success: function(response) {
                 if (response.success) {
                     showAlert('Produit supprimé avec succès', 'success');
+                    $('#deleteModal').modal('hide');
                     loadProducts();
+                    loadDashboardStats();
                 } else {
                     showAlert(response.message || 'Erreur lors de la suppression', 'danger');
                 }
@@ -217,242 +386,131 @@ function deleteProduct(productId) {
             }
         });
     }
-}
 
-function loadCategories() {
-    $.ajax({
-        url: 'categories_api.php',
-        type: 'GET',
-        data: { action: 'get_categories' },
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                updateCategorySelect(response.data);
-            }
-        },
-        error: function() {
-            console.error('Erreur lors du chargement des catégories');
-        }
-    });
-}
-
-function updateCategorySelect(categories) {
-    const select = $('#category');
-    select.find('option:not(:first)').remove();
-    
-    categories.forEach(category => {
-        select.append(`<option value="${category.id}">${escapeHtml(category.name)}</option>`);
-    });
-}
-
-function saveCategory() {
-    const formData = new FormData($('#categoryForm')[0]);
-    formData.append('action', 'save_category');
-    
-    $.ajax({
-        url: 'categories_api.php',
-        type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                showAlert('Catégorie sauvegardée avec succès', 'success');
-                $('#categoryModal').modal('hide');
-                loadCategories();
-            } else {
-                showAlert(response.message || 'Erreur lors de la sauvegarde', 'danger');
-            }
-        },
-        error: function() {
-            showAlert('Erreur de connexion au serveur', 'danger');
-        }
-    });
-}
-
-function initMediaCapture() {
-    // Gestion de la capture vidéo
-    $('#captureVideoBtn').on('click', function() {
-        startVideoCapture();
-    });
-    
-    // Gestion de la capture photo
-    $('#capturePhotoBtn').on('click', function() {
-        startPhotoCapture();
-    });
-    
-    // Gestion de l'upload de fichier
-    $('#uploadFileBtn').on('click', function() {
-        $('#media').click();
-    });
-    
-    // Gestion de la sélection de fichier
-    $('#media').on('change', function() {
-        const file = this.files[0];
-        if (file) {
-            previewFile(file);
-        }
-    });
-}
-
-function startVideoCapture() {
-    navigator.mediaDevices.getUserMedia({ video: true })
-        .then(function(stream) {
-            const video = $('#captureVideo')[0];
-            video.srcObject = stream;
-            video.style.display = 'block';
-            $('#captureControls').removeClass('d-none');
-        })
-        .catch(function(err) {
-            showAlert('Erreur d\'accès à la caméra', 'danger');
-        });
-}
-
-function startPhotoCapture() {
-    navigator.mediaDevices.getUserMedia({ video: true })
-        .then(function(stream) {
-            const video = $('#captureVideo')[0];
-            video.srcObject = stream;
-            video.style.display = 'block';
-            $('#captureControls').removeClass('d-none');
-        })
-        .catch(function(err) {
-            showAlert('Erreur d\'accès à la caméra', 'danger');
-        });
-}
-
-function previewFile(file) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const preview = $('#mediaPreview');
-        if (file.type.startsWith('image/')) {
-            preview.html(`<img src="${e.target.result}" class="img-thumbnail" style="max-width: 200px;">`);
-        } else if (file.type.startsWith('video/')) {
-            preview.html(`<video src="${e.target.result}" controls style="max-width: 200px;"></video>`);
-        }
-    };
-    reader.readAsDataURL(file);
-}
-
-function filterProducts(searchTerm) {
-    $('#productsTable tbody tr').each(function() {
-        const productName = $(this).find('td:first').text().toLowerCase();
-        if (productName.includes(searchTerm)) {
-            $(this).show();
-        } else {
-            $(this).hide();
-        }
-    });
-}
-
-function updatePagination(pagination) {
-    const container = $('#pagination');
-    container.empty();
-    
-    if (pagination.total_pages > 1) {
-        const ul = $('<ul class="pagination"></ul>');
-        
-        // Bouton précédent
-        if (pagination.current_page > 1) {
-            ul.append(`<li class="page-item"><a class="page-link" href="#" data-page="${pagination.current_page - 1}">Précédent</a></li>`);
-        }
-        
-        // Pages
-        for (let i = 1; i <= pagination.total_pages; i++) {
-            const active = i === pagination.current_page ? 'active' : '';
-            ul.append(`<li class="page-item ${active}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`);
-        }
-        
-        // Bouton suivant
-        if (pagination.current_page < pagination.total_pages) {
-            ul.append(`<li class="page-item"><a class="page-link" href="#" data-page="${pagination.current_page + 1}">Suivant</a></li>`);
-        }
-        
-        container.append(ul);
-        
-        // Gestion des clics sur la pagination
-        $('.page-link').on('click', function(e) {
-            e.preventDefault();
-            const page = $(this).data('page');
-            loadProducts(page);
-        });
+    // Réinitialisation du formulaire produit
+    function resetProductForm() {
+        $('#productForm')[0].reset();
+        $('#productId').val('');
+        $('#mediaPreview').empty();
+        $('#capturePreview').empty();
+        $('#captureVideo').addClass('d-none');
+        $('#captureCanvas').addClass('d-none');
+        $('#captureControls').addClass('d-none');
     }
-}
 
-function checkSession() {
-    $.ajax({
-        url: 'auth.php',
-        type: 'POST',
-        data: { action: 'check_session' },
-        dataType: 'json',
-        success: function(response) {
-            if (!response.valid) {
-                showAlert('Session expirée, redirection...', 'warning');
-                setTimeout(function() {
-                    window.location.href = 'signin.html';
-                }, 2000);
+    // Configuration de la capture de média
+    function setupMediaCapture() {
+        let stream = null;
+
+        // Capture vidéo
+        $('#captureVideoBtn').click(function() {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function(mediaStream) {
+                    stream = mediaStream;
+                    const video = $('#captureVideo')[0];
+                    video.srcObject = stream;
+                    video.classList.remove('d-none');
+                    $('#captureControls').removeClass('d-none');
+                })
+                .catch(function(err) {
+                    showAlert('Erreur d\'accès à la caméra', 'danger');
+                });
+        });
+
+        // Capture photo
+        $('#capturePhotoBtn').click(function() {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function(mediaStream) {
+                    stream = mediaStream;
+                    const video = $('#captureVideo')[0];
+                    video.srcObject = stream;
+                    video.classList.remove('d-none');
+                    $('#captureControls').removeClass('d-none');
+                })
+                .catch(function(err) {
+                    showAlert('Erreur d\'accès à la caméra', 'danger');
+                });
+        });
+
+        // Upload de fichier
+        $('#uploadFileBtn').click(function() {
+            $('#media').click();
+        });
+
+        $('#media').change(function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    $('#mediaPreview').html(`
+                        <img src="${e.target.result}" alt="Preview" style="max-width: 100%; max-height: 200px;" class="rounded">
+                    `);
+                };
+                reader.readAsDataURL(file);
             }
-        }
-    });
-}
+        });
 
-function logout() {
-    $.ajax({
-        url: 'auth.php',
-        type: 'POST',
-        data: { action: 'logout' },
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                window.location.href = 'signin.html';
+        // Sauvegarde de la capture
+        $('#saveCaptureBtn').click(function() {
+            const canvas = $('#captureCanvas')[0];
+            const video = $('#captureVideo')[0];
+            const context = canvas.getContext('2d');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0);
+            
+            canvas.toBlob(function(blob) {
+                const file = new File([blob], 'capture.jpg', { type: 'image/jpeg' });
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                $('#media')[0].files = dt.files;
+                
+                $('#capturePreview').html(`
+                    <img src="${canvas.toDataURL()}" alt="Capture" style="max-width: 100%; max-height: 200px;" class="rounded">
+                `);
+                
+                stopCapture();
+            }, 'image/jpeg');
+        });
+
+        // Annulation de la capture
+        $('#cancelCaptureBtn').click(function() {
+            stopCapture();
+        });
+
+        function stopCapture() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
             }
+            $('#captureVideo').addClass('d-none');
+            $('#captureCanvas').addClass('d-none');
+            $('#captureControls').addClass('d-none');
         }
-    });
-}
+    }
 
-function showAlert(message, type) {
-    const alert = $(`
-        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    `);
-    
-    $('.content').prepend(alert);
-    
-    // Auto-dismiss après 5 secondes
-    setTimeout(function() {
-        alert.alert('close');
-    }, 5000);
-}
+    // Affichage d'alertes
+    function showAlert(message, type) {
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        // Supprimer les anciennes alertes
+        $('.alert').remove();
+        
+        // Ajouter la nouvelle alerte
+        $('.container-fluid').first().prepend(alertHtml);
+        
+        // Auto-suppression après 5 secondes
+        setTimeout(() => {
+            $('.alert').fadeOut();
+        }, 5000);
+    }
 
-function showMessage(message, type) {
-    const alert = $(`
-        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    `);
-    
-    $('.content').prepend(alert);
-    
-    // Auto-dismiss après 5 secondes
-    setTimeout(function() {
-        alert.alert('close');
-    }, 5000);
-}
-
-// Fonctions utilitaires
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-function formatPrice(price) {
-    return new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: 'EUR'
-    }).format(price);
-}
+    // Mise à jour automatique des statistiques toutes les 30 secondes
+    setInterval(loadDashboardStats, 30000);
+});
