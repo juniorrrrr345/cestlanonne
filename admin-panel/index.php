@@ -1,15 +1,18 @@
 <?php
 session_start();
+require_once 'config.php';
+
+// Vérification de l'authentification
 if (!isset($_SESSION['admin_username'])) {
     header('Location: signin.html');
     exit();
 }
+
 $admin_name = $_SESSION['admin_username'];
 ?>
 
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
     <meta charset="utf-8">
     <title>Panel Admin - Ma Boutique</title>
@@ -17,27 +20,24 @@ $admin_name = $_SESSION['admin_username'];
     <meta content="" name="keywords">
     <meta content="" name="description">
 
-    <!-- Favicon -->
-    <link href="img/favicon.ico" rel="icon">
-
     <!-- Google Web Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Icon Font Stylesheet -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
 
     <!-- Bootstrap CSS -->
-    <link href="bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- Template Stylesheet -->
     <link href="style.css" rel="stylesheet">
 </head>
 
 <body>
-    <div class="container-xxl position-relative bg-white d-flex p-0">
+    <div class="container-fluid position-relative bg-white d-flex p-0">
         <!-- Sidebar Start -->
         <div class="sidebar pe-4 pb-3">
             <nav class="navbar bg-light navbar-light">
@@ -142,34 +142,16 @@ $admin_name = $_SESSION['admin_username'];
                     <div class="col-lg-8">
                         <div class="bg-light rounded p-4">
                             <h6 class="mb-4">Activité Récente</h6>
-                            <div class="d-flex align-items-center border-bottom py-3">
-                                <i class="fa fa-plus-circle text-success me-3"></i>
-                                <div class="w-100 ms-3">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <h6 class="mb-0">Nouveau produit ajouté</h6>
-                                        <small>Il y a 3 minutes</small>
+                            <div id="recentActivity">
+                                <div class="d-flex align-items-center border-bottom py-3">
+                                    <i class="fa fa-plus-circle text-success me-3"></i>
+                                    <div class="w-100 ms-3">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-0">Chargement...</h6>
+                                            <small>...</small>
+                                        </div>
+                                        <span>Chargement des activités...</span>
                                     </div>
-                                    <span>Produit "Nom du produit" a été ajouté au catalogue</span>
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-center border-bottom py-3">
-                                <i class="fa fa-shopping-bag text-primary me-3"></i>
-                                <div class="w-100 ms-3">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <h6 class="mb-0">Nouvelle commande</h6>
-                                        <small>Il y a 15 minutes</small>
-                                    </div>
-                                    <span>Commande #12345 reçue - 150€</span>
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-center py-3">
-                                <i class="fa fa-user-plus text-info me-3"></i>
-                                <div class="w-100 ms-3">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <h6 class="mb-0">Nouveau client</h6>
-                                        <small>Il y a 1 heure</small>
-                                    </div>
-                                    <span>Client "Jean Dupont" s'est inscrit</span>
                                 </div>
                             </div>
                         </div>
@@ -181,13 +163,13 @@ $admin_name = $_SESSION['admin_username'];
                                 <button class="btn btn-primary" id="addProductBtn">
                                     <i class="fa fa-plus me-2"></i>Ajouter un produit
                                 </button>
-                                <button class="btn btn-success">
+                                <button class="btn btn-success" onclick="window.location.href='categories.php'">
                                     <i class="fa fa-tags me-2"></i>Gérer les catégories
                                 </button>
-                                <button class="btn btn-info">
+                                <button class="btn btn-info" id="viewAnalyticsBtn">
                                     <i class="fa fa-chart-bar me-2"></i>Voir les analytics
                                 </button>
-                                <button class="btn btn-warning">
+                                <button class="btn btn-warning" id="settingsBtn">
                                     <i class="fa fa-cog me-2"></i>Paramètres boutique
                                 </button>
                             </div>
@@ -221,7 +203,12 @@ $admin_name = $_SESSION['admin_username'];
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Product rows will be inserted here by JS -->
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">
+                                        <i class="fa fa-spinner fa-spin fa-2x mb-2"></i>
+                                        <br>Chargement des produits...
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -243,72 +230,43 @@ $admin_name = $_SESSION['admin_username'];
                       <div class="row">
                         <div class="col-md-6">
                           <div class="mb-3">
-                            <label for="productName" class="form-label">Nom du Produit</label>
+                            <label for="productName" class="form-label">Nom du Produit *</label>
                             <input type="text" class="form-control" id="productName" name="product_name" required>
                           </div>
                           <div class="mb-3">
-                            <label for="price" class="form-label">Prix (€)</label>
+                            <label for="price" class="form-label">Prix (€) *</label>
                             <input type="number" step="0.01" class="form-control" id="price" name="price" required>
                           </div>
                           <div class="mb-3">
                             <label for="category" class="form-label">Catégorie</label>
                             <select class="form-control" id="category" name="category_id">
                               <option value="">Sélectionner une catégorie</option>
-                              <!-- Categories will be loaded here -->
                             </select>
                           </div>
                           <div class="mb-3">
                             <label for="country" class="form-label">Pays d'origine</label>
-                            <input type="text" class="form-control" id="country" name="country" required>
+                            <input type="text" class="form-control" id="country" name="country">
                           </div>
                         </div>
                         <div class="col-md-6">
                           <div class="mb-3">
                             <label for="media" class="form-label">Photos/Vidéos</label>
-                            <div class="btn-group w-100 mb-2" role="group">
-                              <button type="button" class="btn btn-outline-primary" id="captureVideoBtn">
-                                <i class="fa fa-video me-2"></i>Vidéo
-                              </button>
-                              <button type="button" class="btn btn-outline-primary" id="capturePhotoBtn">
-                                <i class="fa fa-camera me-2"></i>Photo
-                              </button>
-                              <button type="button" class="btn btn-outline-secondary" id="uploadFileBtn">
-                                <i class="fa fa-upload me-2"></i>Fichier
-                              </button>
-                            </div>
-                            <input type="file" class="form-control d-none" id="media" name="media" accept="image/*,video/*">
+                            <input type="file" class="form-control" id="media" name="media" accept="image/*,video/*">
                             <div id="mediaPreview" class="mt-2"></div>
-                            <div id="capturePreview" class="mt-2"></div>
-                            <video id="captureVideo" class="d-none" autoplay muted style="max-width: 100%; max-height: 200px;"></video>
-                            <canvas id="captureCanvas" class="d-none"></canvas>
-                            <div id="captureControls" class="mt-2 d-none">
-                              <button type="button" class="btn btn-success btn-sm" id="saveCaptureBtn">
-                                <i class="fa fa-save me-1"></i>Sauvegarder
-                              </button>
-                              <button type="button" class="btn btn-danger btn-sm" id="cancelCaptureBtn">
-                                <i class="fa fa-times me-1"></i>Annuler
-                              </button>
-                            </div>
                           </div>
-                        </div>
-                      </div>
-                      <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
-                        <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
-                      </div>
-                      <div class="row">
-                        <div class="col-md-6">
                           <div class="mb-3">
                             <label for="weight" class="form-label">Poids</label>
                             <input type="text" class="form-control" id="weight" name="weight" placeholder="ex: 500g">
                           </div>
-                        </div>
-                        <div class="col-md-6">
                           <div class="mb-3">
                             <label for="stock" class="form-label">Stock</label>
                             <input type="number" class="form-control" id="stock" name="stock" value="0">
                           </div>
                         </div>
+                      </div>
+                      <div class="mb-3">
+                        <label for="description" class="form-label">Description *</label>
+                        <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
                       </div>
                     </div>
                     <div class="modal-footer">
@@ -351,11 +309,10 @@ $admin_name = $_SESSION['admin_username'];
     </div>
 
     <!-- JavaScript Libraries -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Admin Panel JavaScript -->
     <script src="admin.js"></script>
 </body>
-
 </html>

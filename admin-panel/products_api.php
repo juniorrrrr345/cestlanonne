@@ -6,186 +6,343 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With');
 
+// Gestion des requêtes OPTIONS (CORS preflight)
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
 try {
     $conn = getDBConnection();
 } catch (Exception $e) {
     http_response_code(500);
-    echo json_encode(['error' => $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => 'Erreur de connexion à la base de données: ' . $e->getMessage()]);
     exit();
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
+$action = $_GET['action'] ?? '';
 
-if ($method === 'GET') {
-    // Pagination and search
-    $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-    if ($id) {
-        $sql = "SELECT * FROM products WHERE id=$id";
-        $res = $conn->query($sql);
-        $products = [];
-        if ($row = $res->fetch_assoc()) {
-            $products[] = $row;
-        }
-        echo json_encode([
-            'products' => $products,
-            'total' => count($products),
-            'page' => 1,
-            'limit' => 1
-        ]);
-        exit();
+// Fonction de réponse JSON
+function sendResponse($success, $data = null, $message = '') {
+    $response = ['success' => $success];
+    if ($data !== null) $response = array_merge($response, $data);
+    if ($message) $response['message'] = $message;
+    echo json_encode($response);
+    exit();
+}
+
+// Fonction de validation des données
+function validateProductData($data) {
+    $errors = [];
+    
+    if (empty($data['product_name'])) {
+        $errors[] = 'Le nom du produit est requis';
     }
     
-    $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 15;
+    if (empty($data['price']) || !is_numeric($data['price']) || $data['price'] < 0) {
+        $errors[] = 'Le prix doit être un nombre positif';
+    }
+    
+    if (empty($data['description'])) {
+        $errors[] = 'La description est requise';
+    }
+    
+    return $errors;
+}
+
+// Gestion des requêtes GET
+if ($method === 'GET') {
+    // Récupération d'un produit spécifique
+    if (isset($_GET['id']) && !empty($_GET['id'])) {
+        $id = (int)$_GET['id'];
+        $sql = "SELECT p.*, c.name as category_name 
+                FROM products p 
+                LEFT JOIN categories c ON p.category_id = c.id 
+                WHERE p.id = $id";
+        $result = $conn->query($sql);
+        
+        if ($result && $result->num_rows > 0) {
+            $product = $result->fetch_assoc();
+            sendResponse(true, ['products' => [$product]]);
+        } else {
+            sendResponse(false, null, 'Produit non trouvé');
+        }
+    }
+    
+    // Récupération des statistiques
+    if ($action === 'get_stats') {
+        try {
+            // Statistiques des produits
+            $sql = "SELECT COUNT(*) as total_products FROM products";
+            $result = $conn->query($sql);
+            $total_products = $result->fetch_assoc()['total_products'];
+            
+            // Statistiques des commandes (simulation)
+            $total_orders = 0;
+            $total_revenue = 0;
+            
+            // Statistiques des clients (simulation)
+            $total_customers = 0;
+            
+            sendResponse(true, [
+                'stats' => [
+                    'total_products' => $total_products,
+                    'total_orders' => $total_orders,
+                    'total_customers' => $total_customers,
+                    'total_revenue' => $total_revenue
+                ]
+            ]);
+        } catch (Exception $e) {
+            sendResponse(false, null, 'Erreur lors du calcul des statistiques: ' . $e->getMessage());
+        }
+    }
+    
+    // Récupération de l'activité récente
+    if ($action === 'get_recent_activity') {
+        try {
+            $sql = "SELECT p.product_name, p.created_at, 'product_added' as type 
+                    FROM products p 
+                    ORDER BY p.created_at DESC 
+                    LIMIT 5";
+            $result = $conn->query($sql);
+            
+            $activities = [];
+            while ($row = $result->fetch_assoc()) {
+                $activities[] = [
+                    'title' => 'Nouveau produit ajouté',
+                    'description' => 'Produit "' . $row['product_name'] . '" ajouté au catalogue',
+                    'time' => date('d/m/Y H:i', strtotime($row['created_at'])),
+                    'icon' => 'fa-plus-circle',
+                    'color' => 'success'
+                ];
+            }
+            
+            sendResponse(true, ['activities' => $activities]);
+        } catch (Exception $e) {
+            sendResponse(false, null, 'Erreur lors du chargement de l\'activité récente');
+        }
+    }
+    
+    // Récupération de tous les produits (avec pagination et recherche)
+    $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+    $limit = isset($_GET['limit']) ? max(1, (int)$_GET['limit']) : 15;
     $search = isset($_GET['search']) ? sanitize($_GET['search']) : '';
     $offset = ($page - 1) * $limit;
-    $where = '';
-    if ($search !== '') {
-        $where = "WHERE product_name LIKE '%$search%' OR description LIKE '%$search%' OR category LIKE '%$search%'";
+    
+    try {
+        $where_conditions = [];
+        $params = [];
+        
+        if (!empty($search)) {
+            $where_conditions[] = "(p.product_name LIKE ? OR p.description LIKE ? OR c.name LIKE ?)";
+            $search_param = "%$search%";
+            $params = [$search_param, $search_param, $search_param];
+        }
+        
+        $where_clause = !empty($where_conditions) ? 'WHERE ' . implode(' OR ', $where_conditions) : '';
+        
+        // Compter le total
+        $count_sql = "SELECT COUNT(*) as total FROM products p LEFT JOIN categories c ON p.category_id = c.id $where_clause";
+        $stmt = $conn->prepare($count_sql);
+        if (!empty($params)) {
+            $stmt->bind_param(str_repeat('s', count($params)), ...$params);
+        }
+        $stmt->execute();
+        $total_result = $stmt->get_result();
+        $total = $total_result->fetch_assoc()['total'];
+        
+        // Récupérer les produits
+        $sql = "SELECT p.*, c.name as category_name 
+                FROM products p 
+                LEFT JOIN categories c ON p.category_id = c.id 
+                $where_clause 
+                ORDER BY p.id DESC 
+                LIMIT ? OFFSET ?";
+        
+        $stmt = $conn->prepare($sql);
+        if (!empty($params)) {
+            $stmt->bind_param(str_repeat('s', count($params)) . 'ii', ...$params, $limit, $offset);
+        } else {
+            $stmt->bind_param('ii', $limit, $offset);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $products = [];
+        while ($row = $result->fetch_assoc()) {
+            $products[] = $row;
+        }
+        
+        sendResponse(true, [
+            'products' => $products,
+            'total' => (int)$total,
+            'page' => $page,
+            'limit' => $limit,
+            'total_pages' => ceil($total / $limit)
+        ]);
+        
+    } catch (Exception $e) {
+        sendResponse(false, null, 'Erreur lors de la récupération des produits: ' . $e->getMessage());
     }
-    
-    $total_sql = "SELECT COUNT(*) as total FROM products $where";
-    $total_res = $conn->query($total_sql);
-    $total = $total_res->fetch_assoc()['total'];
-    
-    $sql = "SELECT p.*, c.name as category_name 
-            FROM products p 
-            LEFT JOIN categories c ON p.category_id = c.id 
-            $where 
-            ORDER BY p.id DESC LIMIT $limit OFFSET $offset";
-    $res = $conn->query($sql);
-    $products = [];
-    while ($row = $res->fetch_assoc()) {
-        $products[] = $row;
-    }
-    
-    echo json_encode([
-        'products' => $products,
-        'total' => (int)$total,
-        'page' => $page,
-        'limit' => $limit
-    ]);
-    exit();
 }
 
+// Gestion des requêtes POST (ajout/modification)
 if ($method === 'POST') {
     try {
-        $id = isset($_POST['id']) && $_POST['id'] !== '' ? (int)$_POST['id'] : 0;
-
-        $product_name = sanitize($_POST['product_name'] ?? '');
-        $price = sanitize($_POST['price'] ?? '');
-        $description = sanitize($_POST['description'] ?? '');
-        $category_id = isset($_POST['category_id']) && $_POST['category_id'] !== '' ? (int)$_POST['category_id'] : null;
-        $weight = sanitize($_POST['weight'] ?? '');
-        $country = sanitize($_POST['country'] ?? '');
-        $media = '';
-
-        // Handle file upload
-        if (isset($_FILES['media']) && $_FILES['media']['error'] === UPLOAD_ERR_OK) {
-            validateFile($_FILES['media']);
-            
-            $ext = strtolower(pathinfo($_FILES['media']['name'], PATHINFO_EXTENSION));
-            $filename = uniqid('media_') . '.' . $ext;
-            $target = UPLOAD_DIR . $filename;
-            
-            if (!is_dir(UPLOAD_DIR)) {
-                mkdir(UPLOAD_DIR, 0777, true);
-            }
-            
-            if (move_uploaded_file($_FILES['media']['tmp_name'], $target)) {
-                $media = $target;
-            } else {
-                throw new Exception('Erreur lors du téléchargement du fichier');
-            }
-        }
-
-        if ($id > 0) {
-            // Update product
-            $updateMediaSQL = $media ? ", media='$media'" : '';
-            $categorySQL = $category_id ? ", category_id = $category_id" : ", category_id = NULL";
-            $sql = "UPDATE products SET product_name='$product_name', price='$price', description='$description', weight='$weight', country='$country' $updateMediaSQL $categorySQL WHERE id=$id";
-            if ($conn->query($sql)) {
-                echo json_encode(['success' => true, 'updated' => true, 'message' => 'Produit mis à jour avec succès']);
-            } else {
-                throw new Exception('Erreur lors de la mise à jour: ' . $conn->error);
-            }
-        } else {
-            // Insert product
-            $categorySQL = $category_id ? ", category_id" : "";
-            $categoryValue = $category_id ? ", $category_id" : "";
-            $sql = "INSERT INTO products (product_name, price, media, description, weight, country $categorySQL) 
-                    VALUES ('$product_name', '$price', '$media', '$description', '$weight', '$country' $categoryValue)";
-            if ($conn->query($sql)) {
-                echo json_encode(['success' => true, 'id' => $conn->insert_id, 'message' => 'Produit ajouté avec succès']);
-            } else {
-                throw new Exception('Erreur lors de l\'ajout: ' . $conn->error);
-            }
-        }
-    } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode(['error' => $e->getMessage()]);
-    }
-    exit();
-}
-
-if ($method === 'PUT') {
-    try {
-        // Parse input
-        parse_str(file_get_contents('php://input'), $_PUT);
-        $id = (int)($_PUT['id'] ?? 0);
-        $product_name = sanitize($_PUT['product_name'] ?? '');
-        $price = sanitize($_PUT['price'] ?? '');
-        $description = sanitize($_PUT['description'] ?? '');
-        $category = sanitize($_PUT['category'] ?? '');
-        $weight = sanitize($_PUT['weight'] ?? '');
-        $country = sanitize($_PUT['country'] ?? '');
+        $id = isset($_POST['id']) && !empty($_POST['id']) ? (int)$_POST['id'] : 0;
         
-        $sql = "UPDATE products SET product_name='$product_name', price='$price', description='$description', category='$category', weight='$weight', country='$country' WHERE id=$id";
-        if ($conn->query($sql)) {
-            echo json_encode(['success' => true, 'message' => 'Produit mis à jour avec succès']);
-        } else {
-            throw new Exception('Erreur lors de la mise à jour: ' . $conn->error);
+        // Validation des données
+        $product_data = [
+            'product_name' => $_POST['product_name'] ?? '',
+            'price' => $_POST['price'] ?? '',
+            'description' => $_POST['description'] ?? '',
+            'category_id' => isset($_POST['category_id']) && !empty($_POST['category_id']) ? (int)$_POST['category_id'] : null,
+            'weight' => $_POST['weight'] ?? '',
+            'country' => $_POST['country'] ?? '',
+            'stock' => isset($_POST['stock']) ? (int)$_POST['stock'] : 0
+        ];
+        
+        $validation_errors = validateProductData($product_data);
+        if (!empty($validation_errors)) {
+            sendResponse(false, null, 'Erreurs de validation: ' . implode(', ', $validation_errors));
         }
+        
+        // Traitement du fichier média
+        $media_path = '';
+        if (isset($_FILES['media']) && $_FILES['media']['error'] === UPLOAD_ERR_OK) {
+            try {
+                validateFile($_FILES['media']);
+                
+                $ext = strtolower(pathinfo($_FILES['media']['name'], PATHINFO_EXTENSION));
+                $filename = uniqid('media_') . '.' . $ext;
+                $target = UPLOAD_DIR . $filename;
+                
+                if (!is_dir(UPLOAD_DIR)) {
+                    mkdir(UPLOAD_DIR, 0777, true);
+                }
+                
+                if (move_uploaded_file($_FILES['media']['tmp_name'], $target)) {
+                    $media_path = $target;
+                } else {
+                    throw new Exception('Erreur lors du téléchargement du fichier');
+                }
+            } catch (Exception $e) {
+                sendResponse(false, null, 'Erreur lors du traitement du fichier: ' . $e->getMessage());
+            }
+        }
+        
+        if ($id > 0) {
+            // Mise à jour du produit
+            $update_fields = [
+                "product_name = ?",
+                "price = ?",
+                "description = ?",
+                "weight = ?",
+                "country = ?",
+                "stock = ?"
+            ];
+            
+            $params = [
+                $product_data['product_name'],
+                $product_data['price'],
+                $product_data['description'],
+                $product_data['weight'],
+                $product_data['country'],
+                $product_data['stock']
+            ];
+            
+            if ($product_data['category_id']) {
+                $update_fields[] = "category_id = ?";
+                $params[] = $product_data['category_id'];
+            } else {
+                $update_fields[] = "category_id = NULL";
+            }
+            
+            if ($media_path) {
+                $update_fields[] = "media = ?";
+                $params[] = $media_path;
+            }
+            
+            $sql = "UPDATE products SET " . implode(', ', $update_fields) . " WHERE id = ?";
+            $params[] = $id;
+            
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param(str_repeat('s', count($params)), ...$params);
+            
+            if ($stmt->execute()) {
+                sendResponse(true, null, 'Produit mis à jour avec succès');
+            } else {
+                throw new Exception('Erreur lors de la mise à jour: ' . $stmt->error);
+            }
+        } else {
+            // Ajout d'un nouveau produit
+            $sql = "INSERT INTO products (product_name, price, media, description, category_id, weight, country, stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param('sdsssssi', 
+                $product_data['product_name'],
+                $product_data['price'],
+                $media_path,
+                $product_data['description'],
+                $product_data['category_id'],
+                $product_data['weight'],
+                $product_data['country'],
+                $product_data['stock']
+            );
+            
+            if ($stmt->execute()) {
+                sendResponse(true, ['id' => $conn->insert_id], 'Produit ajouté avec succès');
+            } else {
+                throw new Exception('Erreur lors de l\'ajout: ' . $stmt->error);
+            }
+        }
+        
     } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode(['error' => $e->getMessage()]);
+        sendResponse(false, null, 'Erreur: ' . $e->getMessage());
     }
-    exit();
 }
 
+// Gestion des requêtes DELETE
 if ($method === 'DELETE') {
     try {
         parse_str(file_get_contents('php://input'), $_DELETE);
-        $id = (int)($_DELETE['id'] ?? 0);
+        $id = isset($_DELETE['id']) ? (int)$_DELETE['id'] : 0;
         
-        // Get media file to delete
-        $sql = "SELECT media FROM products WHERE id=$id";
-        $result = $conn->query($sql);
+        if ($id <= 0) {
+            sendResponse(false, null, 'ID de produit invalide');
+        }
+        
+        // Récupérer le fichier média avant suppression
+        $sql = "SELECT media FROM products WHERE id = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
         if ($row = $result->fetch_assoc()) {
+            // Supprimer le fichier média s'il existe
             if ($row['media'] && file_exists($row['media'])) {
                 unlink($row['media']);
             }
         }
         
-        $sql = "DELETE FROM products WHERE id=$id";
-        if ($conn->query($sql)) {
-            echo json_encode(['success' => true, 'message' => 'Produit supprimé avec succès']);
+        // Supprimer le produit
+        $sql = "DELETE FROM products WHERE id = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param('i', $id);
+        
+        if ($stmt->execute()) {
+            sendResponse(true, null, 'Produit supprimé avec succès');
         } else {
-            throw new Exception('Erreur lors de la suppression: ' . $conn->error);
+            throw new Exception('Erreur lors de la suppression: ' . $stmt->error);
         }
+        
     } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode(['error' => $e->getMessage()]);
+        sendResponse(false, null, 'Erreur lors de la suppression: ' . $e->getMessage());
     }
-    exit();
 }
 
-// OPTIONS preflight
-if ($method === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
-
+// Méthode non autorisée
 http_response_code(405);
-echo json_encode(['error' => 'Method Not Allowed']);
-exit(); 
+sendResponse(false, null, 'Méthode non autorisée');
+?> 
