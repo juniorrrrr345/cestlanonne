@@ -1,6 +1,22 @@
 -- Configuration de la base de données pour le panel admin
 -- Exécutez ce script dans votre base de données MySQL
 
+-- Table des catégories
+CREATE TABLE IF NOT EXISTS categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    parent_id INT NULL,
+    sort_order INT DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE SET NULL,
+    INDEX idx_parent_id (parent_id),
+    INDEX idx_sort_order (sort_order),
+    INDEX idx_is_active (is_active)
+);
+
 -- Table des produits (si elle n'existe pas déjà)
 CREATE TABLE IF NOT EXISTS products (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -8,11 +24,13 @@ CREATE TABLE IF NOT EXISTS products (
     price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     media VARCHAR(500),
     description TEXT,
-    category VARCHAR(100),
+    category_id INT NULL,
     weight VARCHAR(50),
     country VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
+    INDEX idx_category_id (category_id)
 );
 
 -- Table des prix multiples

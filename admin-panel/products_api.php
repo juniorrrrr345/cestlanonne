@@ -48,7 +48,11 @@ if ($method === 'GET') {
     $total_res = $conn->query($total_sql);
     $total = $total_res->fetch_assoc()['total'];
     
-    $sql = "SELECT * FROM products $where ORDER BY id DESC LIMIT $limit OFFSET $offset";
+    $sql = "SELECT p.*, c.name as category_name 
+            FROM products p 
+            LEFT JOIN categories c ON p.category_id = c.id 
+            $where 
+            ORDER BY p.id DESC LIMIT $limit OFFSET $offset";
     $res = $conn->query($sql);
     $products = [];
     while ($row = $res->fetch_assoc()) {
@@ -71,7 +75,7 @@ if ($method === 'POST') {
         $product_name = sanitize($_POST['product_name'] ?? '');
         $price = sanitize($_POST['price'] ?? '');
         $description = sanitize($_POST['description'] ?? '');
-        $category = sanitize($_POST['category'] ?? '');
+        $category_id = isset($_POST['category_id']) && $_POST['category_id'] !== '' ? (int)$_POST['category_id'] : null;
         $weight = sanitize($_POST['weight'] ?? '');
         $country = sanitize($_POST['country'] ?? '');
         $media = '';
@@ -98,7 +102,8 @@ if ($method === 'POST') {
         if ($id > 0) {
             // Update product
             $updateMediaSQL = $media ? ", media='$media'" : '';
-            $sql = "UPDATE products SET product_name='$product_name', price='$price', description='$description', category='$category', weight='$weight', country='$country' $updateMediaSQL WHERE id=$id";
+            $categorySQL = $category_id ? ", category_id = $category_id" : ", category_id = NULL";
+            $sql = "UPDATE products SET product_name='$product_name', price='$price', description='$description', weight='$weight', country='$country' $updateMediaSQL $categorySQL WHERE id=$id";
             if ($conn->query($sql)) {
                 echo json_encode(['success' => true, 'updated' => true, 'message' => 'Produit mis à jour avec succès']);
             } else {
@@ -106,8 +111,10 @@ if ($method === 'POST') {
             }
         } else {
             // Insert product
-            $sql = "INSERT INTO products (product_name, price, media, description, category, weight, country) 
-                    VALUES ('$product_name', '$price', '$media', '$description', '$category', '$weight', '$country')";
+            $categorySQL = $category_id ? ", category_id" : "";
+            $categoryValue = $category_id ? ", $category_id" : "";
+            $sql = "INSERT INTO products (product_name, price, media, description, weight, country $categorySQL) 
+                    VALUES ('$product_name', '$price', '$media', '$description', '$weight', '$country' $categoryValue)";
             if ($conn->query($sql)) {
                 echo json_encode(['success' => true, 'id' => $conn->insert_id, 'message' => 'Produit ajouté avec succès']);
             } else {
