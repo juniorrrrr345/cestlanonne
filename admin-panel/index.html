@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Administrateur - AVEC AMOUR</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-container">
+            <div class="login-header">
+                <h1 class="gradient-text">AVEC AMOUR</h1>
+                <p>Panel Administrateur</p>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="input-group">
+                    <i class="ri-user-line"></i>
+                    <input type="text" id="username" placeholder="Nom d'utilisateur" required>
+                </div>
+                <div class="input-group">
+                    <i class="ri-lock-line"></i>
+                    <input type="password" id="password" placeholder="Mot de passe" required>
+                </div>
+                <button type="submit" class="login-btn">
+                    <i class="ri-login-box-line"></i>
+                    Se connecter
+                </button>
+            </form>
+            <div id="loginError" class="error-message" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="dashboard" class="dashboard" style="display: none;">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-left">
+                <h1 class="gradient-text">AVEC AMOUR</h1>
+                <p>Panel Administrateur</p>
+            </div>
+            <div class="header-right">
+                <button id="logoutBtn" class="logout-btn">
+                    <i class="ri-logout-box-line"></i>
+                    Déconnexion
+                </button>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="dashboard-nav">
+            <button class="nav-btn active" data-section="products">
+                <i class="ri-shopping-bag-4-line"></i>
+                Produits
+            </button>
+            <button class="nav-btn" data-section="categories">
+                <i class="ri-book-shelf-line"></i>
+                Catégories
+            </button>
+            <button class="nav-btn" data-section="orders">
+                <i class="ri-shopping-cart-line"></i>
+                Commandes
+            </button>
+            <button class="nav-btn" data-section="stats">
+                <i class="ri-bar-chart-line"></i>
+                Statistiques
+            </button>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="dashboard-content">
+            <!-- Products Section -->
+            <section id="products" class="content-section active">
+                <div class="section-header">
+                    <h2>Gestion des Produits</h2>
+                    <button id="addProductBtn" class="add-btn">
+                        <i class="ri-add-line"></i>
+                        Ajouter un produit
+                    </button>
+                </div>
+
+                <div class="search-bar">
+                    <i class="ri-search-line"></i>
+                    <input type="text" id="productSearch" placeholder="Rechercher un produit...">
+                </div>
+
+                <div class="products-grid" id="productsGrid">
+                    <!-- Products will be loaded here -->
+                </div>
+            </section>
+
+            <!-- Categories Section -->
+            <section id="categories" class="content-section">
+                <div class="section-header">
+                    <h2>Gestion des Catégories</h2>
+                    <button id="addCategoryBtn" class="add-btn">
+                        <i class="ri-add-line"></i>
+                        Ajouter une catégorie
+                    </button>
+                </div>
+                <div class="categories-grid" id="categoriesGrid">
+                    <!-- Categories will be loaded here -->
+                </div>
+            </section>
+
+            <!-- Orders Section -->
+            <section id="orders" class="content-section">
+                <div class="section-header">
+                    <h2>Gestion des Commandes</h2>
+                </div>
+                <div class="orders-list" id="ordersList">
+                    <p class="placeholder-text">Aucune commande pour le moment</p>
+                </div>
+            </section>
+
+            <!-- Stats Section -->
+            <section id="stats" class="content-section">
+                <div class="section-header">
+                    <h2>Statistiques</h2>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="ri-shopping-bag-4-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalProducts">0</h3>
+                            <p>Produits</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="ri-book-shelf-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalCategories">0</h3>
+                            <p>Catégories</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="ri-shopping-cart-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalOrders">0</h3>
+                            <p>Commandes</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="ri-money-euro-circle-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalRevenue">0€</h3>
+                            <p>Revenus</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Product Modal -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Ajouter un produit</h3>
+                <button class="close-btn" id="closeModal">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <form id="productForm" class="product-form">
+                <input type="hidden" id="productId">
+                
+                <div class="form-group">
+                    <label for="productName">Nom du produit *</label>
+                    <input type="text" id="productName" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="productCategory">Catégorie *</label>
+                        <select id="productCategory" required>
+                            <option value="">Sélectionner une catégorie</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="productWeight">Poids (g) *</label>
+                        <input type="text" id="productWeight" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="productCountry">Pays d'origine *</label>
+                        <input type="text" id="productCountry" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="productStock">Stock</label>
+                        <input type="number" id="productStock" value="0" min="0">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="productDescription">Description *</label>
+                    <textarea id="productDescription" rows="4" required></textarea>
+                </div>
+
+                <!-- Prices Section -->
+                <div class="prices-section">
+                    <div class="prices-header">
+                        <h4>Prix du produit</h4>
+                        <button type="button" class="add-price-btn" id="addPriceBtn">
+                            <i class="ri-add-line"></i>
+                            Ajouter un prix
+                        </button>
+                    </div>
+                    <div id="pricesContainer">
+                        <div class="price-item">
+                            <input type="number" placeholder="Prix (€)" step="0.01" class="price-input" required>
+                            <select class="price-type">
+                                <option value="regular">Prix normal</option>
+                                <option value="sale">Prix soldé</option>
+                                <option value="wholesale">Prix gros</option>
+                                <option value="promotional">Prix promotionnel</option>
+                            </select>
+                            <input type="text" placeholder="Devise (EUR)" value="EUR" class="price-currency">
+                            <button type="button" class="remove-price-btn" onclick="removePrice(this)">
+                                <i class="ri-close-line"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Media Upload -->
+                <div class="form-group">
+                    <label>Médias (Photos/Vidéos)</label>
+                    <div class="media-upload" onclick="document.getElementById('productMedia').click()">
+                        <i class="ri-upload-cloud-line"></i>
+                        <p>Cliquez pour ajouter des photos ou vidéos</p>
+                        <input type="file" id="productMedia" multiple accept="image/*,video/*" style="display: none;">
+                    </div>
+                    <div id="mediaPreview" class="media-preview"></div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn" id="cancelProduct">Annuler</button>
+                    <button type="submit" class="save-btn">
+                        <i class="ri-save-line"></i>
+                        Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div id="categoryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="categoryModalTitle">Ajouter une catégorie</h3>
+                <button class="close-btn" id="closeCategoryModal">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <form id="categoryForm" class="product-form">
+                <input type="hidden" id="categoryId">
+                
+                <div class="form-group">
+                    <label for="categoryName">Nom de la catégorie *</label>
+                    <input type="text" id="categoryName" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="categoryDescription">Description</label>
+                    <textarea id="categoryDescription" rows="4"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="categoryParent">Catégorie parente</label>
+                    <select id="categoryParent">
+                        <option value="">Aucune (catégorie principale)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="categorySortOrder">Ordre d'affichage</label>
+                    <input type="number" id="categorySortOrder" value="0" min="0">
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn" id="cancelCategory">Annuler</button>
+                    <button type="submit" class="save-btn">
+                        <i class="ri-save-line"></i>
+                        Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content delete-modal">
+            <div class="modal-header">
+                <h3>Confirmer la suppression</h3>
+                <button class="close-btn" id="closeDeleteModal">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div class="delete-content">
+                <i class="ri-error-warning-line"></i>
+                <p>Êtes-vous sûr de vouloir supprimer cet élément ?</p>
+                <p class="delete-item-name"></p>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="cancel-btn" id="cancelDelete">Annuler</button>
+                <button type="button" class="delete-btn" id="confirmDelete">
+                    <i class="ri-delete-bin-line"></i>
+                    Supprimer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>

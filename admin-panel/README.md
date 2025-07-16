@@ -1,196 +1,228 @@
-# Panel Admin - Ma Boutique
+# Panel Administrateur AVEC AMOUR
 
-## 🛍️ Vue d'ensemble
+Un panel administrateur moderne et fonctionnel pour la gestion de votre boutique en ligne.
 
-Ce panel admin a été spécialement conçu pour gérer votre boutique e-commerce. Il remplace l'ancien panel générique par une interface moderne et adaptée aux besoins d'une boutique en ligne.
+## 🚀 Fonctionnalités
 
-## ✨ Nouvelles fonctionnalités
+### ✅ Gestion des Produits
+- **Ajout/Modification/Suppression** de produits
+- **Catégories multiples** avec sélection dans un menu déroulant
+- **Prix multiples** par produit (normal, soldé, gros, promotionnel)
+- **Support vidéo et images** pour les médias
+- **Recherche avancée** dans les produits
+- **Stock et poids** configurables
 
-### 📊 Dashboard intelligent
-- **Statistiques en temps réel** : Nombre de produits, commandes, clients et chiffre d'affaires
-- **Activité récente** : Suivi des dernières actions (nouveaux produits, commandes, clients)
-- **Actions rapides** : Accès direct aux fonctions principales
-- **Mise à jour automatique** : Les statistiques se rafraîchissent toutes les 30 secondes
+### ✅ Gestion des Catégories
+- **Création de catégories** avec description
+- **Hiérarchie** (catégories parentes/enfants)
+- **Ordre d'affichage** personnalisable
+- **Statistiques** par catégorie
 
-### 🎨 Interface moderne
-- **Design adapté e-commerce** : Couleurs et icônes spécifiques à la vente en ligne
-- **Navigation intuitive** : Menu latéral avec icônes claires
-- **Responsive design** : Compatible mobile et tablette
-- **Animations fluides** : Transitions et effets visuels modernes
+### ✅ Interface Moderne
+- **Design responsive** adapté mobile/desktop
+- **Animations fluides** et transitions
+- **Notifications** en temps réel
+- **Interface intuitive** avec icônes Remix Icons
 
-### 📦 Gestion des produits améliorée
-- **Vue d'ensemble** : Tableau avec aperçu des images et informations essentielles
-- **Recherche intelligente** : Filtrage en temps réel par nom, description ou catégorie
-- **Pagination optimisée** : Navigation facile entre les pages
-- **Actions groupées** : Boutons d'édition et suppression côte à côte
+### ✅ Sécurité
+- **Authentification** sécurisée
+- **Session persistante** avec localStorage
+- **Validation des données** côté client
+- **Headers de sécurité** configurés
 
-### 📸 Capture de média avancée
-- **Capture photo/vidéo** : Utilisation de la caméra directement depuis le navigateur
-- **Upload de fichiers** : Support des formats image et vidéo
-- **Prévisualisation** : Aperçu immédiat des médias sélectionnés
-- **Gestion des erreurs** : Messages d'erreur clairs en cas de problème
-
-### 🔧 Fonctionnalités techniques
-- **API RESTful** : Communication moderne avec le serveur
-- **Gestion d'état** : État local pour une meilleure performance
-- **Validation côté client** : Vérification des données avant envoi
-- **Gestion des erreurs** : Messages d'erreur informatifs
-
-## 🚀 Installation et configuration
+## 🛠️ Installation
 
 ### Prérequis
-- PHP 7.4 ou supérieur
-- MySQL 5.7 ou supérieur
-- Serveur web (Apache/Nginx)
+- Node.js >= 18.0.0
+- Serveur web (Apache, Nginx, ou serveur Node.js)
 
-### Installation
-1. **Cloner le projet** dans votre répertoire web
-2. **Configurer la base de données** :
-   ```sql
-   -- Exécuter le script database_setup.sql
-   source database_setup.sql
-   ```
-3. **Configurer la connexion** dans `config.php`
-4. **Créer un utilisateur admin** :
-   ```sql
-   INSERT INTO admin_users (username, password, email, role) 
-   VALUES ('admin', '$2y$10$...', 'admin@votreboutique.com', 'admin');
-   ```
-
-### Configuration
-Modifiez le fichier `config.php` avec vos paramètres :
-```php
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'votre_base');
-define('DB_USER', 'votre_utilisateur');
-define('DB_PASS', 'votre_mot_de_passe');
-```
-
-## 📱 Utilisation
-
-### Connexion
-1. Accédez à `signin.html`
-2. Utilisez les identifiants admin créés
-3. Vous serez redirigé vers le dashboard
-
-### Gestion des produits
-1. **Ajouter un produit** : Cliquez sur "Ajouter un produit"
-2. **Remplir le formulaire** : Nom, prix, description, catégorie
-3. **Ajouter des médias** : Photo/vidéo via caméra ou upload
-4. **Sauvegarder** : Le produit apparaît dans le tableau
-
-### Navigation
-- **Dashboard** : Vue d'ensemble et statistiques
-- **Catégories** : Gestion des catégories de produits
-- **Commandes** : Gestion des commandes (à venir)
-- **Clients** : Gestion des clients (à venir)
-- **Analytics** : Statistiques détaillées (à venir)
-- **Paramètres** : Configuration de la boutique (à venir)
-
-## 🎯 Fonctionnalités à venir
-
-### Phase 2 - Gestion des commandes
-- [ ] Interface de gestion des commandes
-- [ ] Statuts de commande (en attente, expédiée, livrée)
-- [ ] Notifications automatiques
-- [ ] Génération de factures
-
-### Phase 3 - Gestion des clients
-- [ ] Base de données clients
-- [ ] Historique des achats
-- [ ] Système de fidélité
-- [ ] Communication client
-
-### Phase 4 - Analytics avancées
-- [ ] Graphiques de vente
-- [ ] Analyse des produits populaires
-- [ ] Rapports de performance
-- [ ] Export de données
-
-### Phase 5 - Paramètres boutique
-- [ ] Configuration générale
-- [ ] Gestion des paiements
-- [ ] Paramètres de livraison
-- [ ] Personnalisation de l'interface
-
-## 🔒 Sécurité
-
-### Authentification
-- Sessions sécurisées
-- Protection contre les injections SQL
-- Validation des données côté serveur
-- Gestion des permissions utilisateur
-
-### Protection des données
-- Chiffrement des mots de passe
-- Validation des fichiers uploadés
-- Protection CSRF
-- Logs d'activité
-
-## 🛠️ Maintenance
-
-### Sauvegarde
+### Installation locale
 ```bash
-# Sauvegarde de la base de données
-mysqldump -u user -p database > backup.sql
+# Cloner le projet
+git clone [votre-repo]
 
-# Sauvegarde des fichiers
-tar -czf admin_backup.tar.gz admin-panel/
+# Installer les dépendances
+npm install
+
+# Démarrer le serveur de développement
+npm run dev
 ```
 
-### Mise à jour
-1. Sauvegarder les données actuelles
-2. Remplacer les fichiers modifiés
-3. Exécuter les scripts de migration si nécessaire
-4. Tester les fonctionnalités
+### Déploiement
 
-## 📞 Support
+#### Vercel
+```bash
+# Installer Vercel CLI
+npm i -g vercel
 
-### Problèmes courants
-1. **Erreur de connexion** : Vérifiez les paramètres de base de données
-2. **Images non affichées** : Vérifiez les permissions du dossier uploads
-3. **Capture caméra** : Assurez-vous que le site est en HTTPS
+# Déployer
+vercel
+```
 
-### Logs
-Les erreurs sont enregistrées dans :
-- `error.log` : Erreurs PHP
-- `access.log` : Accès au panel
-- Base de données : Table `activity_logs`
+#### Render
+1. Connectez votre repository GitHub
+2. Créez un nouveau service Web
+3. Le fichier `render.yaml` est déjà configuré
+
+#### Netlify
+1. Connectez votre repository
+2. Déployez automatiquement
+
+## 📁 Structure des fichiers
+
+```
+admin-panel/
+├── index.html          # Page principale
+├── admin.css           # Styles CSS
+├── admin.js            # Logique JavaScript
+├── .htaccess           # Configuration Apache
+├── package.json        # Configuration Node.js
+├── vercel.json         # Configuration Vercel
+├── render.yaml         # Configuration Render
+├── server.js           # Serveur Express
+└── README.md           # Documentation
+```
+
+## 🔐 Authentification
+
+**Identifiants par défaut :**
+- **Utilisateur :** `admin`
+- **Mot de passe :** `admin123`
+
+⚠️ **Important :** Changez ces identifiants en production !
 
 ## 🎨 Personnalisation
 
 ### Couleurs
-Modifiez les variables CSS dans `style.css` :
+Modifiez les variables CSS dans `admin.css` :
 ```css
 :root {
-    --primary-color: #votre_couleur;
-    --secondary-color: #votre_couleur;
-    /* ... */
+  --primary-color: #009CFF;
+  --secondary-color: #4DC7A0;
+  /* ... autres couleurs */
 }
 ```
 
 ### Logo et branding
-- Remplacez les icônes FontAwesome
-- Modifiez le titre "Ma Boutique"
-- Personnalisez les couleurs du gradient
+1. Remplacez le texte "AVEC AMOUR" dans `index.html`
+2. Modifiez l'image de fond dans `admin.css`
+3. Personnalisez les icônes avec Remix Icons
 
-## 📈 Performance
+## 📊 Fonctionnalités avancées
 
-### Optimisations
-- Images compressées
-- CSS et JS minifiés
-- Requêtes SQL optimisées
-- Cache des données fréquentes
+### Prix multiples
+Chaque produit peut avoir plusieurs prix :
+- **Prix normal** : Prix standard
+- **Prix soldé** : Prix en promotion
+- **Prix gros** : Prix pour les grossistes
+- **Prix promotionnel** : Prix temporaire
 
-### Monitoring
-- Temps de chargement des pages
-- Utilisation de la base de données
-- Erreurs JavaScript
-- Performance des requêtes
+### Support vidéo
+- Formats supportés : MP4, WebM, OGG
+- Lecture automatique en boucle
+- Prévisualisation dans les modals
+
+### Catégories hiérarchiques
+- Création de sous-catégories
+- Ordre d'affichage personnalisable
+- Statistiques par catégorie
+
+## 🔧 Configuration
+
+### Variables d'environnement
+```bash
+# Port du serveur (optionnel)
+PORT=3000
+
+# URL de l'API (à configurer)
+API_BASE_URL=./api
+```
+
+### Base de données
+Le panel utilise actuellement des données simulées. Pour connecter une vraie base de données :
+
+1. Créez un dossier `api/`
+2. Ajoutez vos endpoints PHP/Node.js
+3. Modifiez `admin.js` pour utiliser les vraies APIs
+
+## 🚀 Déploiement rapide
+
+### Vercel (Recommandé)
+```bash
+npm i -g vercel
+vercel --prod
+```
+
+### Render
+1. Connectez votre GitHub
+2. Créez un nouveau service Web
+3. Déployez automatiquement
+
+### Netlify
+1. Glissez-déposez le dossier
+2. Ou connectez votre GitHub
+
+## 📱 Responsive Design
+
+Le panel s'adapte automatiquement :
+- **Desktop** : Interface complète
+- **Tablet** : Navigation optimisée
+- **Mobile** : Interface tactile
+
+## 🔒 Sécurité
+
+### Headers configurés
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `X-XSS-Protection: 1; mode=block`
+
+### Authentification
+- Session persistante
+- Déconnexion automatique
+- Validation des données
+
+## 🐛 Dépannage
+
+### Problèmes courants
+
+**1. Page blanche**
+- Vérifiez que tous les fichiers sont présents
+- Consultez la console du navigateur
+
+**2. Styles non chargés**
+- Vérifiez le chemin vers `admin.css`
+- Vérifiez les permissions des fichiers
+
+**3. JavaScript non fonctionnel**
+- Vérifiez le chemin vers `admin.js`
+- Consultez la console pour les erreurs
+
+**4. Images non affichées**
+- Vérifiez le chemin vers `hModuTC.jpeg`
+- Ajoutez vos propres images
+
+## 📈 Évolutions futures
+
+- [ ] Intégration base de données réelle
+- [ ] Système de commandes
+- [ ] Analytics avancées
+- [ ] Gestion des utilisateurs
+- [ ] Export/Import de données
+- [ ] Notifications push
+- [ ] Mode sombre
+
+## 🤝 Support
+
+Pour toute question ou problème :
+1. Consultez la console du navigateur
+2. Vérifiez les logs du serveur
+3. Testez en mode local d'abord
+
+## 📄 Licence
+
+MIT License - Libre d'utilisation et modification
 
 ---
 
-**Version** : 2.0  
-**Dernière mise à jour** : Décembre 2024  
-**Auteur** : Assistant IA  
-**Licence** : Libre d'utilisation
+**AVEC AMOUR** - Panel Administrateur v2.0
+*Développé avec ❤️ pour votre boutique en ligne*
