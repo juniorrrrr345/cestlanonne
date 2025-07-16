@@ -1,0 +1,27 @@
+{
+  "name": "avec-amour-website",
+  "version": "1.0.0",
+  "description": "Site web AVEC AMOUR - E-commerce et services",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'Build completed'",
+    "start": "npx serve -s . -l $PORT",
+    "render-start": "npx serve -s . -l $PORT"
+  },
+  "keywords": [
+    "ecommerce",
+    "livraison",
+    "ile-de-france",
+    "avec-amour"
+  ],
+  "author": "AVEC AMOUR",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "serve": "^14.2.1",
+    "express": "^4.18.2"
+  }
+}
