@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <title>DASHMIN - Bootstrap Admin Template</title>
+    <title>Admin Panel - Connexion</title>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <meta content="" name="keywords">
     <meta content="" name="description">
@@ -20,15 +20,11 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
 
-    <!-- Libraries Stylesheet -->
-    <link href="lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
-    <link href="lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css" rel="stylesheet" />
-
-    <!-- Customized Bootstrap Stylesheet -->
-    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="bootstrap.min.css" rel="stylesheet">
 
     <!-- Template Stylesheet -->
-    <link href="css/style.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
 </head>
 
 <body>
@@ -41,35 +37,42 @@
         </div>
         <!-- Spinner End -->
 
-
         <!-- Sign In Start -->
         <div class="container-fluid">
             <div class="row h-100 align-items-center justify-content-center" style="min-height: 100vh;">
                 <div class="col-12 col-sm-8 col-md-6 col-lg-5 col-xl-4">
                     <div class="bg-light rounded p-4 p-sm-5 my-4 mx-3">
                         <div class="d-flex align-items-center justify-content-between mb-3">
-                            <a href="index.html" class="">
-                                <h3 class="text-primary"><i class="fa fa-hashtag me-2"></i>DASHMIN</h3>
+                            <a href="index.php" class="">
+                                <h3 class="text-primary"><i class="fa fa-hashtag me-2"></i>ADMIN</h3>
                             </a>
-                            <h3>Sign In</h3>
+                            <h3>Connexion</h3>
                         </div>
-                        <div class="form-floating mb-3">
-                            <input type="email" class="form-control" id="floatingInput" placeholder="name@example.com">
-                            <label for="floatingInput">Email address</label>
-                        </div>
-                        <div class="form-floating mb-4">
-                            <input type="password" class="form-control" id="floatingPassword" placeholder="Password">
-                            <label for="floatingPassword">Password</label>
-                        </div>
-                        <div class="d-flex align-items-center justify-content-between mb-4">
-                            <div class="form-check">
-                                <input type="checkbox" class="form-check-input" id="exampleCheck1">
-                                <label class="form-check-label" for="exampleCheck1">Check me out</label>
+                        
+                        <div id="loginMessage" class="alert d-none" role="alert"></div>
+                        
+                        <form id="loginForm">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="username" name="username" placeholder="Nom d'utilisateur" required>
+                                <label for="username">Nom d'utilisateur</label>
                             </div>
-                            <a href="">Forgot Password</a>
-                        </div>
-                        <button type="submit" class="btn btn-primary py-3 w-100 mb-4">Sign In</button>
-                        <p class="text-center mb-0">Don't have an Account? <a href="">Sign Up</a></p>
+                            <div class="form-floating mb-4">
+                                <input type="password" class="form-control" id="password" name="password" placeholder="Mot de passe" required>
+                                <label for="password">Mot de passe</label>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between mb-4">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="rememberMe">
+                                    <label class="form-check-label" for="rememberMe">Se souvenir de moi</label>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary py-3 w-100 mb-4" id="loginBtn">
+                                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                Se connecter
+                            </button>
+                        </form>
+                        
+                        <p class="text-center mb-0">Pas de compte ? <a href="signup.html">Créer un compte</a></p>
                     </div>
                 </div>
             </div>
@@ -78,18 +81,82 @@
     </div>
 
     <!-- JavaScript Libraries -->
-    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="lib/chart/chart.min.js"></script>
-    <script src="lib/easing/easing.min.js"></script>
-    <script src="lib/waypoints/waypoints.min.js"></script>
-    <script src="lib/owlcarousel/owl.carousel.min.js"></script>
-    <script src="lib/tempusdominus/js/moment.min.js"></script>
-    <script src="lib/tempusdominus/js/moment-timezone.min.js"></script>
-    <script src="lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js"></script>
 
     <!-- Template Javascript -->
-    <script src="js/main.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Masquer le spinner au chargement
+            $('#spinner').hide();
+            
+            // Gestion du formulaire de connexion
+            $('#loginForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                const username = $('#username').val().trim();
+                const password = $('#password').val();
+                
+                if (!username || !password) {
+                    showMessage('Veuillez remplir tous les champs', 'danger');
+                    return;
+                }
+                
+                // Afficher le spinner sur le bouton
+                const $btn = $('#loginBtn');
+                const $spinner = $btn.find('.spinner-border');
+                const $text = $btn.contents().filter(function() { return this.nodeType === 3; });
+                
+                $btn.prop('disabled', true);
+                $spinner.removeClass('d-none');
+                $text.wrap('<span class="d-none"></span>');
+                
+                // Envoyer la requête AJAX
+                $.ajax({
+                    url: 'auth.php',
+                    type: 'POST',
+                    data: {
+                        action: 'login',
+                        username: username,
+                        password: password
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            showMessage('Connexion réussie, redirection...', 'success');
+                            setTimeout(function() {
+                                window.location.href = 'index.php';
+                            }, 1000);
+                        } else {
+                            showMessage(response.message || 'Erreur de connexion', 'danger');
+                        }
+                    },
+                    error: function() {
+                        showMessage('Erreur de connexion au serveur', 'danger');
+                    },
+                    complete: function() {
+                        // Restaurer le bouton
+                        $btn.prop('disabled', false);
+                        $spinner.addClass('d-none');
+                        $text.unwrap();
+                    }
+                });
+            });
+            
+            function showMessage(message, type) {
+                const $alert = $('#loginMessage');
+                $alert.removeClass('alert-success alert-danger alert-warning alert-info')
+                      .addClass('alert-' + type)
+                      .removeClass('d-none')
+                      .text(message);
+                
+                // Masquer le message après 5 secondes
+                setTimeout(function() {
+                    $alert.addClass('d-none');
+                }, 5000);
+            }
+        });
+    </script>
 </body>
 
 </html>
