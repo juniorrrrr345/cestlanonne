@@ -165,8 +165,30 @@ $admin_name = $_SESSION['admin_username'];
                       </div>
                       <div class="mb-3">
                         <label for="media" class="form-label">Video/Photo</label>
-                        <input type="file" class="form-control" id="media" name="media" accept="image/*,video/*">
+                        <div class="btn-group w-100 mb-2" role="group">
+                          <button type="button" class="btn btn-outline-primary" id="captureVideoBtn">
+                            <i class="fa fa-video me-2"></i>Capturer Vidéo
+                          </button>
+                          <button type="button" class="btn btn-outline-primary" id="capturePhotoBtn">
+                            <i class="fa fa-camera me-2"></i>Capturer Photo
+                          </button>
+                          <button type="button" class="btn btn-outline-secondary" id="uploadFileBtn">
+                            <i class="fa fa-upload me-2"></i>Choisir Fichier
+                          </button>
+                        </div>
+                        <input type="file" class="form-control d-none" id="media" name="media" accept="image/*,video/*">
                         <div id="mediaPreview" class="mt-2"></div>
+                        <div id="capturePreview" class="mt-2"></div>
+                        <video id="captureVideo" class="d-none" autoplay muted style="max-width: 100%; max-height: 200px;"></video>
+                        <canvas id="captureCanvas" class="d-none"></canvas>
+                        <div id="captureControls" class="mt-2 d-none">
+                          <button type="button" class="btn btn-success btn-sm" id="saveCaptureBtn">
+                            <i class="fa fa-save me-1"></i>Sauvegarder
+                          </button>
+                          <button type="button" class="btn btn-danger btn-sm" id="cancelCaptureBtn">
+                            <i class="fa fa-times me-1"></i>Annuler
+                          </button>
+                        </div>
                       </div>
                       <div class="mb-3">
                         <label for="description" class="form-label">Description</label>
